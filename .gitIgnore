@@ -1,2 +1,4 @@
 node_modules
 package-lock.json
+# main.js is just an example connection text file thats why its being ignored
+main.js
