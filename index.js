@@ -1,13 +1,8 @@
-const puppeteer = require("puppeteer");
-const fs = require("fs");
-const json2csv = require("json2csv").Parser;
-
 const { jumia } = require("./modules/jumia");
 const { etsy } = require("./modules/etsy");
 
 const { google } = require("googleapis");
 const keys = require("./keys.json");
-
 
 //connect to google spreadsheet
 const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
@@ -15,24 +10,29 @@ const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
 ]);
 
 client.authorize(function (err, tokens) {
+
+  const spreadsheet = `1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`;
+  const dataRange = `A2:C7`;
+  const newDataRange = `A2`;
+
   if (err) {
     console.log(err);
     return;
   } else {
     console.log("Connected to api!");
-    gsrun(client);
+    gsrun(client, spreadsheet, dataRange, newDataRange);
   }
 });
 
-async function gsrun(cl) {
+async function gsrun(cl, spreadsheetId, getRange, postRange) {
   const gsapi = google.sheets({
     version: "v4",
     auth: cl,
   });
 
   const opt = {
-    spreadsheetId: `1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`,
-    range: "A2:C6",
+    spreadsheetId,
+    range: getRange,
   };
 
   let data = await gsapi.spreadsheets.values.get(opt);
@@ -68,10 +68,10 @@ async function gsrun(cl) {
       });
   });
 
-  //Update object 
+  //Update object
   const updateOpt = {
-    spreadsheetId: `1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`,
-    range: "A2",
+    spreadsheetId,
+    range: postRange,
     valueInputOption: "USER_ENTERED",
     resource: { values: output },
   };
