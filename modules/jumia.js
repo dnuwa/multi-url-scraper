@@ -1,6 +1,5 @@
 const puppeteer = require("puppeteer");
 
-
 //jumia
 const jumia = async (url) => {
   const browser = await puppeteer.launch();
@@ -10,16 +9,21 @@ const jumia = async (url) => {
   await page.goto(`${url}`);
 
   const name = await page.evaluate(() =>
-    document.querySelector(".-fs0 h1").innerText.trim()
+    document.querySelector(".-fs0 h1") !== null
+      ? document.querySelector(".-fs0 h1").innerText.trim()
+      : ""
   );
 
   const price = await page.evaluate(() =>
-    document.querySelector(".-hr div span").innerText.trim()
+    document.querySelector(".-hr div span") !== null
+      ? document.querySelector(".-hr div span").innerText.trim()
+      : ""
   );
 
   let product = {
     name,
     price,
+    error: price === "" ? `null` : ``,
   };
 
   await browser.close();

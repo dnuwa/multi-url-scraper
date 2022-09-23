@@ -11,20 +11,22 @@ const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
 
 client.authorize(function (err, tokens) {
 
+  //parameters to pass to the googlesheet run {spreadsheet, sheetName}
   const spreadsheet = `1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`;
-  const dataRange = `A2:C7`;
-  const newDataRange = `A2`;
+  const sheetName = `Sheet2`;
+  const dataRange = `${sheetName}!A2:Z`;
+  const newDataRange = 2;
 
   if (err) {
     console.log(err);
     return;
   } else {
     console.log("Connected to api!");
-    gsrun(client, spreadsheet, dataRange, newDataRange);
+    gsrun(client, spreadsheet, dataRange, newDataRange, sheetName);
   }
 });
 
-async function gsrun(cl, spreadsheetId, getRange, postRange) {
+async function gsrun(cl, spreadsheetId, getRange, postRange, sheetName) {
   const gsapi = google.sheets({
     version: "v4",
     auth: cl,
@@ -43,40 +45,38 @@ async function gsrun(cl, spreadsheetId, getRange, postRange) {
 
   rows.forEach((row) => {
     // Print columns C, which correspond to indice 3.
-    prdtUrls.push(row[2]);
+    prdtUrls.push(row[0]);
   });
-
-  let allProdcutUrls = [];
 
   for (let i = 0; i < prdtUrls.length; i++) {
     let domain = new URL(prdtUrls[i]);
     if (domain.hostname === `www.etsy.com`) {
       const etsyPdt = await etsy(prdtUrls[i]);
-      allProdcutUrls.push({ ...etsyPdt, url: prdtUrls[i] });
-    } else if (domain.hostname === `www.jumia.ug`) {
+      console.log([Object.values(etsyPdt)]);
+
+      const updateOpt = {
+        spreadsheetId,
+        range: `${sheetName}!B${postRange++}`,
+        valueInputOption: "USER_ENTERED",
+        resource: { values: [Object.values(etsyPdt)] },
+      };
+
+      let res = await gsapi.spreadsheets.values.update(updateOpt);
+      console.log(`status: ${res.status} -update success-`);
+    }
+    if (domain.hostname === `www.jumia.ug`) {
       const jumiaPdt = await jumia(prdtUrls[i]);
-      allProdcutUrls.push({ ...jumiaPdt, url: prdtUrls[i] });
+      console.log([Object.values(jumiaPdt)]);
+
+      const updateOpt2 = {
+        spreadsheetId,
+        range: `${sheetName}!B${postRange++}`,
+        valueInputOption: "USER_ENTERED",
+        resource: { values: [Object.values(jumiaPdt)] },
+      };
+
+      let res = await gsapi.spreadsheets.values.update(updateOpt2);
+      console.log(`status: ${res.status} -update success-`);
     }
   }
-
-  // Converts Array of objects into Array of Arrays
-  let output = allProdcutUrls.map(function (obj) {
-    return Object.keys(obj)
-      .sort()
-      .map(function (key) {
-        return obj[key];
-      });
-  });
-
-  //Update object
-  const updateOpt = {
-    spreadsheetId,
-    range: postRange,
-    valueInputOption: "USER_ENTERED",
-    resource: { values: output },
-  };
-
-  //Updates the google spreadsheet
-  let res = await gsapi.spreadsheets.values.update(updateOpt);
-  console.log(`status: ${res.status} -update success-`);
 }
