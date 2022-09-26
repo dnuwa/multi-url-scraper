@@ -1,6 +1,3 @@
-const { jumia } = require("./modules/jumia");
-const { etsy } = require("./modules/etsy");
-
 const { google } = require("googleapis");
 const keys = require("./keys.json");
 
@@ -9,25 +6,44 @@ const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
   "https://www.googleapis.com/auth/spreadsheets",
 ]);
 
-client.authorize(function (err, tokens) {
+const main = (sheetId, sheetName, dataColumn, newDatacolumn, errorColumn) => {
+  client.authorize(function (err, tokens) {
+    //parameters to pass to the googlesheet run {spreadsheetId, sheetName, data-column, new-data-column}
+    const dataRange = `${sheetName}!${dataColumn}2:${dataColumn}`;
+    const newDataRange = 2;
+    const errorRange = 2;
 
-  //parameters to pass to the googlesheet run {spreadsheetId, sheetName, column}
-  const spreadsheet = `1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`;
-  const sheetName = `Sheet2`;
-  const dataRange = `${sheetName}!A2:Z`;
-  const newDataRange = 2;
-  const newDatacolumn = `e`
+    if (err) {
+      console.log(err);
+      return;
+    } else {
+      console.log("Connected to api!");
+      gsrun(
+        client,
+        sheetId,
+        dataColumn,
+        dataRange,
+        newDataRange,
+        errorRange,
+        sheetName,
+        newDatacolumn,
+        errorColumn
+      );
+    }
+  });
+};
 
-  if (err) {
-    console.log(err);
-    return;
-  } else {
-    console.log("Connected to api!");
-    gsrun(client, spreadsheet, dataRange, newDataRange, sheetName, newDatacolumn);
-  }
-});
-
-async function gsrun(cl, spreadsheetId, getRange, postRange, sheetName, column) {
+async function gsrun(
+  cl,
+  spreadsheetId,
+  urlColumn,
+  getRange,
+  postRange,
+  eRange,
+  sheetName,
+  column,
+  errColumn
+) {
   const gsapi = google.sheets({
     version: "v4",
     auth: cl,
@@ -42,42 +58,63 @@ async function gsrun(cl, spreadsheetId, getRange, postRange, sheetName, column) 
   let rows = data.data.values;
 
   //save all the product urls to to the prdUrls variables
-  let prdtUrls = [];
+  let prdtUrls = rows.flat();
 
-  rows.forEach((row) => {
-    // Print columns C, which correspond to indice 3.
-    prdtUrls.push(row[0]);
-  });
+  const parserMap = {
+    "www.etsy.com": require("./modules/etsy").etsy,
+    "www.jumia.ug": require("./modules/jumia").jumia,
+  };
 
   for (let i = 0; i < prdtUrls.length; i++) {
     let domain = new URL(prdtUrls[i]);
-    if (domain.hostname === `www.etsy.com`) {
-      const etsyPdt = await etsy(prdtUrls[i]);
-      console.log([Object.values(etsyPdt)]);
 
-      const updateOpt = {
-        spreadsheetId,
-        range: `${sheetName}!${column}${postRange++}`,
-        valueInputOption: "USER_ENTERED",
-        resource: { values: [Object.values(etsyPdt)] },
-      };
+    const parserFunc = parserMap[domain.host];
 
-      let res = await gsapi.spreadsheets.values.update(updateOpt);
-      console.log(`status: ${res.status} -update success-`);
-    }
-    if (domain.hostname === `www.jumia.ug`) {
-      const jumiaPdt = await jumia(prdtUrls[i]);
-      console.log([Object.values(jumiaPdt)]);
+    const productPriceObj =
+      parserFunc !== undefined
+        ? await parserFunc(prdtUrls[i])
+        : { price: "", error: `Domain not define` };
 
-      const updateOpt2 = {
-        spreadsheetId,
-        range: `${sheetName}!${column}${postRange++}`,
-        valueInputOption: "USER_ENTERED",
-        resource: { values: [Object.values(jumiaPdt)] },
-      };
+    let data = [
+      {
+        range: `${sheetName}!${urlColumn}1`, // Update single cell
+        values: [["Url"]],
+      },
+      {
+        range: "Sheet1!B1", // Update single cell
+        values: [["Name"]],
+      },
+      {
+        range: "Sheet1!C1", // Update single cell
+        values: [["Price"]],
+      },
+      {
+        range: `${sheetName}!${column}1`, // Update single cell
+        values: [["New Price"]],
+      },
+      {
+        range: `${sheetName}!${errColumn}1`, // Update single cell
+        values: [["Error"]],
+      },
+      {
+        range: `${sheetName}!${column}${postRange++}:${column}`, // Update a column
+        values: [[productPriceObj.price]],
+      },
+      {
+        range: `${sheetName}!${errColumn}${eRange++}:${errColumn}`, // Update a column
+        values: [[productPriceObj.error]],
+      },
+    ];
 
-      let res = await gsapi.spreadsheets.values.update(updateOpt2);
-      console.log(`status: ${res.status} -update success-`);
-    }
+    let resource = {
+      spreadsheetId: spreadsheetId,
+      resource: { data: data, valueInputOption: "USER_ENTERED" },
+    };
+
+    let res = await gsapi.spreadsheets.values.batchUpdate(resource);
+    console.log(`status: ${res.status} -update success-`);
   }
 }
+
+// {spreadsheetId, sheetName, url-column, new-data-column, error-column}
+main(`1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`, `Sheet1`, `A`, `E`, `F`);

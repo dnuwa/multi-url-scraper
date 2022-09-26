@@ -8,12 +8,6 @@ const etsy = async (url) => {
   await page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}`);
 
-  const name = await page.evaluate(() =>
-    document.querySelector(".wt-mb-xs-2 h1") !== null
-      ? document.querySelector(".wt-mb-xs-2 h1").innerText.trim()
-      : ""
-  );
-
   const price = await page.evaluate(() =>
     document.querySelector(".wt-mb-xs-3 .wt-display-flex-xs p") !== null
       ? document
@@ -24,8 +18,8 @@ const etsy = async (url) => {
 
   let product = {
     // name,
-    price: price === "" ? `null` : price,
-    // error: price === "" ? `null` : ``,
+    price: price ? price : '',
+    error: price ? `` : `No value`
   };
 
   await browser.close();
