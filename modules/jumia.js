@@ -21,9 +21,9 @@ const jumia = async (url) => {
   );
 
   let product = {
-    name,
-    price,
-    error: price === "" ? `null` : ``,
+    // name,
+    price: price === "" ? `null` : price,
+    // error: price === "" ? `null` : ``,
   };
 
   await browser.close();

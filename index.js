@@ -11,22 +11,23 @@ const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
 
 client.authorize(function (err, tokens) {
 
-  //parameters to pass to the googlesheet run {spreadsheet, sheetName}
+  //parameters to pass to the googlesheet run {spreadsheetId, sheetName, column}
   const spreadsheet = `1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`;
   const sheetName = `Sheet2`;
   const dataRange = `${sheetName}!A2:Z`;
   const newDataRange = 2;
+  const newDatacolumn = `e`
 
   if (err) {
     console.log(err);
     return;
   } else {
     console.log("Connected to api!");
-    gsrun(client, spreadsheet, dataRange, newDataRange, sheetName);
+    gsrun(client, spreadsheet, dataRange, newDataRange, sheetName, newDatacolumn);
   }
 });
 
-async function gsrun(cl, spreadsheetId, getRange, postRange, sheetName) {
+async function gsrun(cl, spreadsheetId, getRange, postRange, sheetName, column) {
   const gsapi = google.sheets({
     version: "v4",
     auth: cl,
@@ -56,7 +57,7 @@ async function gsrun(cl, spreadsheetId, getRange, postRange, sheetName) {
 
       const updateOpt = {
         spreadsheetId,
-        range: `${sheetName}!B${postRange++}`,
+        range: `${sheetName}!${column}${postRange++}`,
         valueInputOption: "USER_ENTERED",
         resource: { values: [Object.values(etsyPdt)] },
       };
@@ -70,7 +71,7 @@ async function gsrun(cl, spreadsheetId, getRange, postRange, sheetName) {
 
       const updateOpt2 = {
         spreadsheetId,
-        range: `${sheetName}!B${postRange++}`,
+        range: `${sheetName}!${column}${postRange++}`,
         valueInputOption: "USER_ENTERED",
         resource: { values: [Object.values(jumiaPdt)] },
       };
