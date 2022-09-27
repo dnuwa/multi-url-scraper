@@ -16,8 +16,8 @@ const jumia = async (url) => {
 
   let product = {
     // name,
-    price: price ? price : "",
-    error: price ? `` : `No value`,
+    price: price ? price : `-`,
+    error: price ? `-` : `No value`,
   };
 
   await browser.close();
