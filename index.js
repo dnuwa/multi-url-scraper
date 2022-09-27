@@ -77,26 +77,6 @@ async function gsrun(
 
     let data = [
       {
-        range: `${sheetName}!${urlColumn}1`, // Update single cell
-        values: [["Url"]],
-      },
-      {
-        range: "Sheet1!B1", // Update single cell
-        values: [["Name"]],
-      },
-      {
-        range: "Sheet1!C1", // Update single cell
-        values: [["Price"]],
-      },
-      {
-        range: `${sheetName}!${column}1`, // Update single cell
-        values: [["New Price"]],
-      },
-      {
-        range: `${sheetName}!${errColumn}1`, // Update single cell
-        values: [["Error"]],
-      },
-      {
         range: `${sheetName}!${column}${postRange++}:${column}`, // Update a column
         values: [[productPriceObj.price]],
       },
@@ -117,4 +97,4 @@ async function gsrun(
 }
 
 // {spreadsheetId, sheetName, url-column, new-data-column, error-column}
-main(`1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`, `Sheet1`, `A`, `E`, `F`);
+main(`1zuJAmH5dbbo5di17Rmi-uIqGmXsZp5p-k1zP7FGYoYI`, `Sheet2`, `A`, `D`, `E`);
